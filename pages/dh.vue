@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import type { JointParameters } from './types/robot';
+import type { JointParameters } from '@/types/robot';
 import { useUrlSearchParams } from '@vueuse/core'
 import { i } from 'mathjs';
 
