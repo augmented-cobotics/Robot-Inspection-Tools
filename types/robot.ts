@@ -1,3 +1,5 @@
+import type { Quaternion, Vector3 } from "three"
+
 export interface JointParameters {
     // name of the joint
     name: string
@@ -31,6 +33,10 @@ export interface RobotDescriptionJoint {
     alpha: number
     // base64 uri encoded mesh data
     mesh: string
+    //
+    mesh_offset: Vector3
+    //
+    mesh_rotation: Quaternion
 }
 
 export interface RobotDescription {

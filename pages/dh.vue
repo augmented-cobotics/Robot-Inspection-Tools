@@ -65,6 +65,8 @@ import { compute } from 'three/tsl';
 
 */
 
+THREE.Object3D.DEFAULT_UP = new THREE.Vector3(0, 0, 1);
+
 const items = ref<JointParameters[]>([])
 const params = useUrlSearchParams('hash')
 
@@ -152,24 +154,38 @@ watch([items, inspectEndItem], () => {
   scene.add(ambientLight);
   scene.add(light);
 
-  scene.add(new THREE.GridHelper(3, 30));
+  const grid = new THREE.GridHelper(3, 30)
+  grid.rotateX(Math.PI / 2);
+
+  scene.add(grid);
 
   let transform = new THREE.Matrix4()
 
-  const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-  const cylinderMaterial = new THREE.MeshStandardMaterial({ color: 0xFFAAAA });
-  const cylinderInspectMaterial = new THREE.MeshStandardMaterial({ color: 0xFF3333 });
+  const lineMaterial = new THREE.LineDashedMaterial({ color: 0x000000 });
+  const cylinderMaterial = new THREE.MeshStandardMaterial({ color: 0xFFAAAA, opacity: 0.4, transparent: true });
+  const cylinderInspectMaterial = new THREE.MeshStandardMaterial({ color: 0xFF3333, opacity: 0.7, transparent: true });
 
   function drawCylinder(inspected: boolean, transform: THREE.Matrix4) {
     const cylinderGeometry = new THREE.CylinderGeometry(0.03, 0.03, 0.09);
     const cylinder = new THREE.Mesh(cylinderGeometry, inspected ? cylinderInspectMaterial : cylinderMaterial);
 
+    const rotation = transform.clone().multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2))
+    cylinder.rotation.setFromRotationMatrix(rotation)
     cylinder.position.setFromMatrixPosition(transform)
-    cylinder.rotation.setFromRotationMatrix(transform)
+
     cylinder.receiveShadow = true;
     cylinder.castShadow = true;
 
     scene.add(cylinder);
+
+    var arrowPos = cylinder.position;
+    
+    const onlyRot = new THREE.Matrix4().extractRotation(transform)
+
+    scene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0).applyMatrix4(onlyRot), arrowPos, 0.05, 0x7F2020, 0.02, 0.01));
+    scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0).applyMatrix4(onlyRot), arrowPos, 0.05, 0x207F20, 0.02, 0.01));
+    scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1).applyMatrix4(onlyRot), arrowPos, 0.05, 0x20207F, 0.02, 0.01));
+
   }
 
   drawCylinder(false, transform);
@@ -182,12 +198,12 @@ watch([items, inspectEndItem], () => {
     const newTransform = transform.clone().multiply(dh)
 
     const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3().setFromMatrixPosition(newTransform),
-        new THREE.Vector3().setFromMatrixPosition(transform),
-      ]);
+      new THREE.Vector3().setFromMatrixPosition(newTransform),
+      new THREE.Vector3().setFromMatrixPosition(transform),
+    ]);
 
     const line = new THREE.Line(lineGeometry, lineMaterial);
-    scene.add(line);
+    // scene.add(line);
 
     drawCylinder(inspected, newTransform);
 
