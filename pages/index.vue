@@ -146,7 +146,8 @@
             </div>
             <div class="flex-1 h-full bg-black relative">
                 <RobotPreview :robot="robotPreview" :show-meshes="showMeshes" :show-frames="showFrames"
-                    :angles="robotPreviewJointsRad" class="h-full" />
+                    :angles="robotPreviewJointsRad" v-model:end-effector-transform="robotPreviewEndEffectorTransform"
+                    class="h-full" />
 
                 <div class="absolute top-0 left-0 p-4">
                     <div class="flex flex-col gap-2 bg-black/10 p-2 rounded-lg">
@@ -170,6 +171,37 @@
                         </div>
                     </div>
                 </div>
+
+                <div v-if="robotPreviewEndEffectorTransform" class="absolute bottom-0 right-0 p-4">
+                    <div class="flex flex-col gap-4 bg-black/10 p-2 rounded-lg">
+                        <div class="flex gap-12 justify-between">
+                            <div>
+                                <p class="font-bold">Transform</p>
+                                <div class="grid grid-rows-4 grid-flow-col gap-4 mt-2">
+                                    <span v-for="j in 16">{{ robotPreviewEndEffectorTransform.elements[j - 1].toFixed(3)
+                                        }}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="font-bold">Position</p>
+                                <div class="grid grid-cols-3 gap-4 mt-2">
+                                    <span>{{ robotPreviewEndEffectorPosition!.x.toFixed(3) }}</span>
+                                    <span>{{ robotPreviewEndEffectorPosition!.y.toFixed(3) }}</span>
+                                    <span>{{ robotPreviewEndEffectorPosition!.z.toFixed(3) }}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="font-bold">Quaternion</p>
+                                <div class="grid grid-cols-4 gap-4 mt-2">
+                                    <span>{{ robotPreviewEndEffectorQuaternion!.x.toFixed(3) }}</span>
+                                    <span>{{ robotPreviewEndEffectorQuaternion!.y.toFixed(3) }}</span>
+                                    <span>{{ robotPreviewEndEffectorQuaternion!.z.toFixed(3) }}</span>
+                                    <span>{{ robotPreviewEndEffectorQuaternion!.w.toFixed(3) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -178,7 +210,7 @@
 <script setup lang="ts">
 import { decode, encode } from 'base64-arraybuffer';
 import localforage, { key } from 'localforage';
-import { Euler, Vector3 } from 'three';
+import { Euler, Matrix4, Quaternion, Vector3 } from 'three';
 import { degToRad } from 'three/src/math/MathUtils.js';
 import { RobotJointType, type Robot } from '~/types/robot';
 
@@ -201,6 +233,9 @@ const robotCursor = ref<Robot>({
 const robotPreview = ref<Robot | undefined>()
 const robotPreviewJoints = ref<number[]>([])
 const robotPreviewJointsRad = computed(() => robotPreviewJoints.value.map(v => degToRad(v)))
+const robotPreviewEndEffectorTransform = ref<Matrix4 | undefined>(undefined)
+const robotPreviewEndEffectorPosition = computed(() => !!robotPreviewEndEffectorTransform.value ? new Vector3().setFromMatrixPosition(robotPreviewEndEffectorTransform.value!) : undefined)
+const robotPreviewEndEffectorQuaternion = computed(() => !!robotPreviewEndEffectorTransform.value ? new Quaternion().setFromRotationMatrix(robotPreviewEndEffectorTransform.value!) : undefined)
 
 const showFrames = ref(true)
 const showMeshes = ref(true)

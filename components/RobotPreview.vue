@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { useResizeObserver } from '@vueuse/core';
+import { degToRad } from 'three/src/math/MathUtils.js';
 
 THREE.Object3D.DEFAULT_UP = new THREE.Vector3(0, 0, 1);
 
@@ -21,6 +22,8 @@ const { robot, showFrames = true, showMeshes = true, angles = [] } = defineProps
     showMeshes?: boolean
     angles?: number[]
 }>()
+
+const endEffectorTransform = defineModel<THREE.Matrix4 | undefined>('endEffectorTransform')
 
 const canvas = useTemplateRef('preview-canvas')
 
@@ -67,6 +70,7 @@ async function updateRobot() {
     robotJointsBaseTransform = []
 
     if (!robot) {
+        endEffectorTransform.value = undefined
         return
     }
 
@@ -77,7 +81,7 @@ async function updateRobot() {
     for (let i = 0; i < robot.joints.length; i++) {
         let item = robot.joints[i]
 
-        const dh = dhToMatrix(item.d, item.theta, item.a, item.alpha)
+        const dh = dhToMatrix(item.d, degToRad(item.theta), item.a, degToRad(item.alpha))
         transform.multiply(dh)
 
         robotJointsBaseTransform.push(transform.clone())
@@ -105,6 +109,8 @@ async function updateRobot() {
             robotGroup.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1).applyMatrix4(rotation), arrowPos, 0.1, 0x20207F, 0.02, 0.01));
         }
     }
+
+    endEffectorTransform.value = transform.clone()
 }
 
 watch([() => robot, () => showMeshes, () => showFrames], async () => {
