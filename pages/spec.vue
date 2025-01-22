@@ -103,7 +103,11 @@ async function renderWorld(yaml: string) {
         let item = data.joints[i]
 
         const dh = dhToMatrix(item.d ?? 0, item.theta ?? 0, item.a ?? 0, item.alpha ?? 0)
-        const newTransform = transform.clone().multiply(dh)
+        let newTransform = transform.clone().multiply(dh)
+
+        if (item.angle) {
+            newTransform = newTransform.multiply(new THREE.Matrix4().makeRotationZ(item.angle))
+        }
 
         const lineGeometry = new THREE.BufferGeometry().setFromPoints([
             new THREE.Vector3().setFromMatrixPosition(newTransform),
@@ -117,11 +121,11 @@ async function renderWorld(yaml: string) {
             const meshData = decode(item.mesh)
             const model = await gltfLoader.parseAsync(meshData, '')
         
-            const onlyRot = new THREE.Matrix4().extractRotation(transform)
+            const onlyRot = new THREE.Matrix4().extractRotation(newTransform)
             const rotation = onlyRot.clone().multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2))
             
             model.scene.rotation.setFromRotationMatrix(rotation)
-            model.scene.position.setFromMatrixPosition(transform)
+            model.scene.position.setFromMatrixPosition(newTransform)
 
             if (item.mesh_offset) {
                 item.mesh_offset = new THREE.Vector3(item.mesh_offset.x, item.mesh_offset.y, item.mesh_offset.z)
