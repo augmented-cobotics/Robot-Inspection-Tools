@@ -182,6 +182,10 @@ import { Euler, Vector3 } from 'three';
 import { degToRad } from 'three/src/math/MathUtils.js';
 import { RobotJointType, type Robot } from '~/types/robot';
 
+useHead({
+    title: 'Robot Designer | ROBOTICA'
+})
+
 const robotDatabase = ref<string[]>([])
 
 const robotStore = localforage.createInstance({
