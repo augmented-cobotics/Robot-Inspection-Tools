@@ -10,9 +10,9 @@ import type { Robot } from '~/types/robot';
 import * as THREE from 'three';
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { useResizeObserver } from '@vueuse/core';
-import { degToRad } from 'three/src/math/MathUtils.js';
+import { degToRad, radToDeg } from 'three/src/math/MathUtils.js';
 
 THREE.Object3D.DEFAULT_UP = new THREE.Vector3(0, 0, 1);
 
@@ -33,87 +33,95 @@ let renderer: THREE.WebGLRenderer;
 let camera: THREE.PerspectiveCamera;
 let scene: THREE.Scene;
 let robotGroup: THREE.Group;
+let robotMeshes: GLTF[] = [
 
-let robotJoints: THREE.Object3D[] = []
-let robotJointsBaseTransform: THREE.Matrix4[] = []
-
-/*
-
-*/
-
-async function updateRobotJoints() {
-    for (let i = 0; i < robotJoints.length; i++) {
-        const model = robotJoints[i]
-        const transform = robotJointsBaseTransform[i].clone()
-
-        if (angles.length >= i) {
-            transform.multiply(new THREE.Matrix4().makeRotationZ(angles[i]))
-        }
-
-        const rotation = new THREE.Matrix4().extractRotation(transform)
-
-        const meshRotation = rotation.clone().multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2))
-
-        model.rotation.setFromRotationMatrix(meshRotation)
-        model.position.setFromMatrixPosition(transform)
-    }
-}
-
-watch(() => angles, () => {
-    updateRobotJoints()
-    renderWorld()
-}, { deep: true });
+]
 
 async function updateRobot() {
+    console.log('aaa')
     robotGroup.clear()
-    robotJoints = []
-    robotJointsBaseTransform = []
 
     if (!robot) {
         endEffectorTransform.value = undefined
         return
     }
 
-    let transform = new THREE.Matrix4()
-
     const gltfLoader = new GLTFLoader();
+
+    let parent: THREE.Object3D | undefined = undefined;
 
     for (let i = 0; i < robot.joints.length; i++) {
         let item = robot.joints[i]
 
-        const dh = dhToMatrix(item.d, degToRad(item.theta), item.a, degToRad(item.alpha))
-        transform.multiply(dh)
+        const obj = new THREE.Object3D();
+        obj.name = item.name
 
-        robotJointsBaseTransform.push(transform.clone())
+        const matrix = dhToMatrix(item.d, degToRad(item.theta), item.a, degToRad(item.alpha))
+        matrix.decompose(obj.position, obj.quaternion, obj.scale);
 
-        const rotation = new THREE.Matrix4().extractRotation(transform)
+        obj.rotateZ(angles[i])
+
+        if (parent != null) {
+            obj.applyMatrix4(parent.matrixWorld)
+        }
+
+        obj.updateMatrixWorld(true)
+
+        robotGroup.add(obj)
 
         if (item.link.mesh && showMeshes) {
-            const meshData = await item.link.mesh.arrayBuffer()
-            const model = await gltfLoader.parseAsync(meshData, '')
+            let model: GLTF;
 
-            const meshRotation = rotation.clone().multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2))
+            if (robotMeshes[i]) {
+                model = robotMeshes[i]
+            } else {
+                const meshData = await item.link.mesh.arrayBuffer()
+                model = await gltfLoader.parseAsync(meshData, '')
+            }
 
-            model.scene.rotation.setFromRotationMatrix(meshRotation)
-            model.scene.position.setFromMatrixPosition(transform)
+            model.scene.position.set(0, 0, 0)
+            model.scene.quaternion.set(0, 0, 0, 1)
+
+            model.scene.position.add(item.link.offset)
+            model.scene.rotateX(degToRad(item.link.rotation.x))
+            model.scene.rotateY(degToRad(item.link.rotation.y))
+            model.scene.rotateZ(degToRad(item.link.rotation.z))
+
+            model.scene.applyMatrix4(obj.matrixWorld)
 
             robotGroup.add(model.scene)
-            robotJoints.push(model.scene)
+            robotMeshes[i] = model
         }
 
         if (showFrames) {
-            const arrowPos = new THREE.Vector3().setFromMatrixPosition(transform);
+            const origin = new THREE.Vector3()
 
-            robotGroup.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0).applyMatrix4(rotation), arrowPos, 0.1, 0x7F2020, 0.02, 0.01));
-            robotGroup.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0).applyMatrix4(rotation), arrowPos, 0.1, 0x207F20, 0.02, 0.01));
-            robotGroup.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1).applyMatrix4(rotation), arrowPos, 0.1, 0x20207F, 0.02, 0.01));
+            let axisX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, 0.1, 0x7F2020, 0.02, 0.01)
+            axisX.applyMatrix4(obj.matrixWorld)
+            robotGroup.add(axisX)
+
+            let axisY = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, 0.1, 0x207F20, 0.02, 0.01)
+            axisY.applyMatrix4(obj.matrixWorld)
+            robotGroup.add(axisY)
+
+            let axisZ = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), origin, 0.1, 0x20207F, 0.02, 0.01)
+            axisZ.applyMatrix4(obj.matrixWorld)
+            robotGroup.add(axisZ)
         }
+
+        parent = obj;
     }
 
-    endEffectorTransform.value = transform.clone()
+    endEffectorTransform.value = parent?.matrixWorld
 }
 
 watch([() => robot, () => showMeshes, () => showFrames], async () => {
+    robotMeshes = []
+    await updateRobot()
+    renderWorld()
+})
+
+watch([() => angles], async () => {
     await updateRobot()
     renderWorld()
 }, { deep: true })

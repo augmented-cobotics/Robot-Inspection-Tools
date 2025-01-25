@@ -178,25 +178,25 @@
                             <div>
                                 <p class="font-bold">Transform</p>
                                 <div class="grid grid-rows-4 grid-flow-col gap-4 mt-2">
-                                    <span v-for="j in 16">{{ robotPreviewEndEffectorTransform.elements[j - 1].toFixed(3)
+                                    <span v-for="j in 16">{{ robotPreviewEndEffectorTransform.elements[j - 1].toFixed(4)
                                         }}</span>
                                 </div>
                             </div>
                             <div>
                                 <p class="font-bold">Position</p>
                                 <div class="grid grid-cols-3 gap-4 mt-2">
-                                    <span>{{ robotPreviewEndEffectorPosition!.x.toFixed(3) }}</span>
-                                    <span>{{ robotPreviewEndEffectorPosition!.y.toFixed(3) }}</span>
-                                    <span>{{ robotPreviewEndEffectorPosition!.z.toFixed(3) }}</span>
+                                    <span>{{ robotPreviewEndEffectorPosition!.x.toFixed(4) }}</span>
+                                    <span>{{ robotPreviewEndEffectorPosition!.y.toFixed(4) }}</span>
+                                    <span>{{ robotPreviewEndEffectorPosition!.z.toFixed(4) }}</span>
                                 </div>
                             </div>
                             <div>
                                 <p class="font-bold">Quaternion</p>
                                 <div class="grid grid-cols-4 gap-4 mt-2">
-                                    <span>{{ robotPreviewEndEffectorQuaternion!.x.toFixed(3) }}</span>
-                                    <span>{{ robotPreviewEndEffectorQuaternion!.y.toFixed(3) }}</span>
-                                    <span>{{ robotPreviewEndEffectorQuaternion!.z.toFixed(3) }}</span>
-                                    <span>{{ robotPreviewEndEffectorQuaternion!.w.toFixed(3) }}</span>
+                                    <span>{{ robotPreviewEndEffectorQuaternion!.x.toFixed(4) }}</span>
+                                    <span>{{ robotPreviewEndEffectorQuaternion!.y.toFixed(4) }}</span>
+                                    <span>{{ robotPreviewEndEffectorQuaternion!.z.toFixed(4) }}</span>
+                                    <span>{{ robotPreviewEndEffectorQuaternion!.w.toFixed(4) }}</span>
                                 </div>
                             </div>
                         </div>
